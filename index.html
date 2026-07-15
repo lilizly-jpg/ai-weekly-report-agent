@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>经营分析周报自动化 AI Agent</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --text: #152238;
+      --muted: #687386;
+      --blue: #2563eb;
+      --blue-2: #eaf1ff;
+      --green: #12a150;
+      --green-bg: #eaf8ef;
+      --red: #dc3545;
+      --red-bg: #fff0f2;
+      --orange: #f59e0b;
+      --orange-bg: #fff7e6;
+      --border: #dfe6f3;
+      --shadow: 0 12px 30px rgba(15, 35, 80, .08);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+    .sidebar {
+      background: #0f1f3d;
+      color: #fff;
+      padding: 26px 20px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #3b82f6, #7c3aed);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(59,130,246,.35);
+    }
+    .brand h1 {
+      font-size: 17px;
+      line-height: 1.25;
+      margin: 0;
+    }
+    .brand span {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: #aebbd1;
+    }
+    .nav-title {
+      color: #aebbd1;
+      font-size: 12px;
+      margin: 22px 10px 10px;
+      letter-spacing: .08em;
+    }
+    .nav-item {
+      padding: 12px 13px;
+      margin: 6px 0;
+      border-radius: 12px;
+      color: #dfe7f5;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .nav-item.active { background: rgba(255,255,255,.12); color: #fff; }
+    .tag {
+      font-size: 11px;
+      padding: 3px 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.13);
+      color: #d4e0f6;
+    }
+    .sidebar-card {
+      margin-top: 28px;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.1);
+    }
+    .sidebar-card p { margin: 0; font-size: 12px; color: #cbd5e1; line-height: 1.6; }
+    .main {
+      padding: 28px 34px 42px;
+    }
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 22px;
+    }
+    .title h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: -.03em;
+    }
+    .title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    button, select {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 13px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+    button.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+      box-shadow: 0 8px 16px rgba(37,99,235,.22);
+    }
+    .grid { display: grid; gap: 18px; }
+    .cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    .kpi .label {
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .kpi .value {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+    .delta {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      font-weight: 650;
+    }
+    .delta.up { color: var(--green); background: var(--green-bg); }
+    .delta.down { color: var(--red); background: var(--red-bg); }
+    .delta.warn { color: #b77900; background: var(--orange-bg); }
+    .sub { margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .two-col { grid-template-columns: 1.25fr .75fr; margin-top: 18px; }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .section-head h3 { margin: 0; font-size: 18px; }
+    .section-head span { color: var(--muted); font-size: 12px; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 80px;
+      gap: 12px;
+      align-items: center;
+      margin: 13px 0;
+      font-size: 13px;
+    }
+    .track {
+      height: 10px;
+      background: #eef3fb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #60a5fa, #2563eb);
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .table th, .table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #edf2f7;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .table th { color: var(--muted); font-weight: 650; background: #fafcff; }
+    .table tr:last-child td { border-bottom: none; }
+    .funnel {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+    }
+    .stage {
+      padding: 15px 12px;
+      border-radius: 16px;
+      background: #f8fbff;
+      border: 1px solid #e3ebf8;
+      position: relative;
+      min-height: 112px;
+    }
+    .stage:not(:last-child)::after {
+      content: "→";
+      position: absolute;
+      right: -13px;
+      top: 42%;
+      color: #a8b5ca;
+      font-weight: 800;
+    }
+    .stage .name { color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+    .stage .num { font-size: 20px; font-weight: 800; }
+    .stage .rate { margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .diagnosis-list { display: grid; gap: 12px; }
+    .diag {
+      padding: 13px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #fbfdff;
+    }
+    .diag strong { display: block; font-size: 14px; margin-bottom: 6px; }
+    .diag p { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.55; }
+    .report {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 18px;
+    }
+    .markdown {
+      border-radius: 16px;
+      background: #0f172a;
+      color: #e5edf8;
+      padding: 18px;
+      min-height: 420px;
+      line-height: 1.65;
+      font-size: 14px;
+      white-space: pre-wrap;
+      overflow: auto;
+    }
+    .tips ul { padding-left: 18px; margin: 8px 0 0; }
+    .tips li { margin: 9px 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .pill {
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      background: var(--blue-2);
+      color: #1e50b5;
+      font-weight: 650;
+    }
+    .upload {
+      border: 1px dashed #a9b8d4;
+      background: #fbfdff;
+      padding: 14px;
+      border-radius: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+    .footer-note {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+    }
+    @media (max-width: 1120px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; }
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .two-col, .report { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .main { padding: 20px; }
+      .cards { grid-template-columns: 1fr; }
+      .funnel { grid-template-columns: 1fr; }
+      .stage:not(:last-child)::after { display: none; }
+      .topbar { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">AI</div>
+        <div>
+          <h1>经营周报 Agent</h1>
+          <span>生活服务经营分析 MVP</span>
+        </div>
+      </div>
+      <div class="nav-title">WORKFLOW</div>
+      <div class="nav-item active">1. 数据读取 <span class="tag">CSV</span></div>
+      <div class="nav-item">2. 指标计算 <span class="tag">Rule</span></div>
+      <div class="nav-item">3. 异动识别 <span class="tag">WoW</span></div>
+      <div class="nav-item">4. 归因诊断 <span class="tag">Tree</span></div>
+      <div class="nav-item">5. AI 初稿 <span class="tag">Draft</span></div>
+      <div class="nav-title">BUSINESS CHAIN</div>
+      <div class="nav-item">商家 → 商品 → 内容/货架</div>
+      <div class="nav-item">用户 → 支付 → 核销 → 售后</div>
+      <div class="sidebar-card">
+        <p>设计原则：数字由规则层计算，AI 只做总结表达；周报发布前保留人工审核，避免经营分析口径失真。</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="title">
+          <h2>经营分析周报自动化 AI Agent</h2>
+          <p>模拟抖音生活服务经营场景：自动监控 GMV、核销、商家动销、内容转化与收入健康度。</p>
+        </div>
+        <div class="actions">
+          <select id="weekSelect">
+            <option>2026-W27</option>
+            <option>2026-W26</option>
+          </select>
+          <select>
+            <option>全国</option>
+            <option>北京</option>
+            <option>上海</option>
+            <option>杭州</option>
+          </select>
+          <button>上传 CSV</button>
+          <button class="primary" onclick="downloadMarkdown()">下载周报</button>
+        </div>
+      </div>
+
+      <div class="grid cards">
+        <div class="panel kpi">
+          <div class="label">支付 GMV <span class="delta down">↓ 6.8%</span></div>
+          <div class="value">¥ 12,486万</div>
+          <div class="sub">主要由餐饮与北京城市下滑贡献</div>
+        </div>
+        <div class="panel kpi">
+          <div class="label">核销 GMV <span class="delta down">↓ 9.4%</span></div>
+          <div class="value">¥ 9,102万</div>
+          <div class="sub">核销率下降，履约端需关注</div>
+        </div>
+        <div class="panel kpi">
+          <div class="label">商家动销率 <span class="delta warn">↓ 3.6pp</span></div>
+          <div class="value">42.8%</div>
+          <div class="sub">低动销商家池扩大</div>
+        </div>
+        <div class="panel kpi">
+          <div class="label">退款率 <span class="delta down">↑ 2.4pp</span></div>
+          <div class="value">8.7%</div>
+          <div class="sub">商品限制与服务承接需排查</div>
+        </div>
+      </div>
+
+      <div class="grid two-col">
+        <section class="panel">
+          <div class="section-head">
+            <h3>核心漏斗链路</h3>
+            <span>曝光 → 点击 → 商品点击 → 支付 → 核销</span>
+          </div>
+          <div class="funnel">
+            <div class="stage">
+              <div class="name">曝光</div>
+              <div class="num">8,420万</div>
+              <div class="rate">WoW -4.1%</div>
+            </div>
+            <div class="stage">
+              <div class="name">点击</div>
+              <div class="num">1,146万</div>
+              <div class="rate">CTR 13.6%</div>
+            </div>
+            <div class="stage">
+              <div class="name">商品点击</div>
+              <div class="num">392万</div>
+              <div class="rate">商品点击率 34.2%</div>
+            </div>
+            <div class="stage">
+              <div class="name">支付订单</div>
+              <div class="num">68.5万</div>
+              <div class="rate">支付转化率 17.5%</div>
+            </div>
+            <div class="stage">
+              <div class="name">核销订单</div>
+              <div class="num">47.9万</div>
+              <div class="rate">核销率 69.9%</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="section-head">
+            <h3>AI 异动诊断</h3>
+            <span>自动识别</span>
+          </div>
+          <div class="diagnosis-list">
+            <div class="diag">
+              <strong>GMV 下滑：优先定位供给与内容侧</strong>
+              <p>支付 GMV WoW -6.8%，主要来自餐饮行业与北京城市；支付转化率基本稳定，说明不是单纯交易转化问题。</p>
+            </div>
+            <div class="diag">
+              <strong>核销压力：支付到履约存在断点</strong>
+              <p>核销 GMV 跌幅高于支付 GMV，核销率下降，需排查预约难、门店承接、券使用限制与核销提醒。</p>
+            </div>
+            <div class="diag">
+              <strong>收入健康度：退款率上升</strong>
+              <p>退款率上升 2.4pp，建议按商品与商家拆解，识别高退款套餐与服务投诉集中商家。</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="grid two-col">
+        <section class="panel">
+          <div class="section-head">
+            <h3>归因拆解</h3>
+            <span>行业 / 城市 / 内容渠道</span>
+          </div>
+          <div class="bar-row"><span>餐饮</span><div class="track"><div class="fill" style="width: 72%"></div></div><strong>-8.9%</strong></div>
+          <div class="bar-row"><span>酒旅</span><div class="track"><div class="fill" style="width: 38%"></div></div><strong>-2.1%</strong></div>
+          <div class="bar-row"><span>丽人</span><div class="track"><div class="fill" style="width: 46%"></div></div><strong>-3.8%</strong></div>
+          <div class="bar-row"><span>休娱</span><div class="track"><div class="fill" style="width: 61%"></div></div><strong>-6.2%</strong></div>
+          <table class="table" style="margin-top: 16px;">
+            <thead><tr><th>拆解维度</th><th>主要异常</th><th>判断</th></tr></thead>
+            <tbody>
+              <tr><td>城市</td><td>北京 -11.3%</td><td>核心城市拖累明显</td></tr>
+              <tr><td>商家</td><td>动销率 -3.6pp</td><td>低动销商家需要分层运营</td></tr>
+              <tr><td>内容</td><td>直播 GMV -12.7%</td><td>开播场次与货盘需排查</td></tr>
+              <tr><td>履约</td><td>核销率 -4.2pp</td><td>支付后到店转化弱</td></tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="panel tips">
+          <div class="section-head">
+            <h3>策略建议</h3>
+            <span>下周动作</span>
+          </div>
+          <div class="upload">
+            页面可接入 CSV 或数仓 API；当前为面试展示 Mock 数据。后续可扩展飞书自动推送和人工审核流。
+          </div>
+          <ul>
+            <li><strong>内容侧：</strong>恢复头部商家直播排期，复制高转化短视频模板，重点补餐饮核心城市供给。</li>
+            <li><strong>商品侧：</strong>排查高 GMV 套餐是否下架、价格带是否变化、优惠力度是否减弱。</li>
+            <li><strong>履约侧：</strong>对未核销用户做提醒，减少预约限制，监控高退款商家与商品。</li>
+            <li><strong>商家侧：</strong>低动销商家分层运营，优先扶持有内容能力但近期动销下降的商家。</li>
+          </ul>
+          <div class="pill-row">
+            <span class="pill">GMV 归因</span><span class="pill">核销率</span><span class="pill">退款率</span><span class="pill">商家动销</span>
+          </div>
+        </section>
+      </div>
+
+      <div class="report">
+        <section class="panel">
+          <div class="section-head">
+            <h3>AI 生成周报初稿</h3>
+            <span>可人工编辑后发布</span>
+          </div>
+          <div class="markdown" id="reportText"># 本周经营分析周报
+
+## 1. 核心结论
+- 本周支付 GMV 为 12,486 万，环比下降 6.8%，主要由餐饮行业与北京城市贡献。
+- 核销 GMV 环比下降 9.4%，跌幅高于支付 GMV，说明支付后到店履约存在压力。
+- 商家动销率下降 3.6 个百分点，低动销商家池扩大，需进行商家分层运营。
+- 退款率上升 2.4 个百分点，收入健康度需关注高退款商品和门店服务承接。
+
+## 2. 异动诊断
+本周 GMV 下滑不是单一转化问题。支付转化率基本稳定，但内容侧直播 GMV 下滑、商家动销下降、核销率下降共同影响最终结果。
+
+## 3. 归因拆解
+行业层面，餐饮行业下滑最明显；城市层面，北京贡献主要跌幅；内容层面，直播 GMV 下滑与开播场次减少有关；履约层面，核销率下降说明用户支付后到店链路存在断点。
+
+## 4. 策略建议
+下周建议优先恢复头部商家直播供给，排查餐饮爆品套餐是否下架或价格带变化；同时针对未核销用户做触达提醒，并治理高退款商家与高退款商品。
+
+## 5. 下周关注
+重点关注支付 GMV、核销率、商家动销率、退款率与直播 GMV。</div>
+        </section>
+
+        <aside class="panel tips">
+          <div class="section-head">
+            <h3>面试讲解要点</h3>
+            <span>你可以这样说</span>
+          </div>
+          <ul>
+            <li>这个页面不是单纯 Dashboard，而是一个经营分析 Agent 工作流。</li>
+            <li>数字计算由规则层完成，AI 负责总结和表达，降低幻觉风险。</li>
+            <li>业务链路按生活服务拆成商家、商品、内容、用户、支付、核销、售后。</li>
+            <li>异动识别后按行业、城市、商家、商品、内容和履约进行归因。</li>
+            <li>最终保留人工审核，适合经营周会和周报自动化场景。</li>
+          </ul>
+          <button class="primary" style="width: 100%; margin-top: 12px;" onclick="downloadMarkdown()">导出 Markdown</button>
+        </aside>
+      </div>
+
+      <div class="footer-note">Prototype for interview demo · Weekly Report Automation Agent · Static HTML MVP</div>
+    </main>
+  </div>
+
+  <script>
+    function downloadMarkdown() {
+      const text = document.getElementById('reportText').innerText;
+      const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '经营分析周报.md';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
